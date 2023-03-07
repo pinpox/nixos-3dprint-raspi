@@ -5,21 +5,32 @@
   ###############
 
   services.octoprint = {
-
     enable = true;
-
     # port = 5000; # Default
     # host = 0.0.0.0 # Default
-
+    openFirewall = true;
     # extraConfig = {}; # Converted to YAML
-    # plugins = plugins: with plugins; [ themeify stlviewer ];
-
+    # plugins = plugins: with plugins; [ octolapse ];
   };
+
+
+  systemd.services.octoprint.serviceConfig.SupplementaryGroups = [ "video" ];
+  users.users.octoprint.extraGroups = [ "video" ];
+
+  systemd.services.motion = {
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.ExecStart =
+      "${pkgs.motion}/bin/motion -c ${./motion.conf}";
+  };
+
+  networking.firewall.allowedTCPPorts = [ 8081 8082 ];
 
 
   #################
   # GENERAL STUFF #
   #################
+
+  system.stateVersion = 23.05;
 
   # Define a user account.
   users.users.root = {
