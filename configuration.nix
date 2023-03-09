@@ -9,28 +9,70 @@
     # port = 5000; # Default
     # host = 0.0.0.0 # Default
     openFirewall = true;
-    # extraConfig = {}; # Converted to YAML
-    # plugins = plugins: with plugins; [ octolapse ];
+
+    # Converted to YAML
+    extraConfig = {
+      # plugins = plugins: with plugins; [ octolapse ];
+
+      # Start and stop the webcam stream when printer is connected/disconnected
+      events = {
+        enabled = "True";
+        subscriptions = [
+          {
+            event = "Connected";
+            command = "/run/wrappers/bin/sudo ${pkgs.systemd}/bin/systemctl start vlcstream.service";
+            type = "system";
+          }
+          {
+            event = "Disconnected";
+            command = "/run/wrappers/bin/sudo ${pkgs.systemd}/bin/systemctl stop vlcstream.service";
+            type = "system";
+          }
+          # - PrintFailed
+          # - PrintDone
+        ];
+      };
+    };
   };
 
+  # Allow octoprint user to start/stop/restart the VLC stream stervice without password
+  security.sudo.enable = true;
+  security.sudo.extraRules = [
+
+    # Allow execution of "/home/root/secret.sh" by user `backup`, `database`
+    # and the group with GID `1006` without a password.
+    {
+      users = [ "octoprint" ];
+      commands = [
+        { command = "${pkgs.systemd}/bin/systemctl start vlcstream.service"; options = [ "SETENV" "NOPASSWD" ]; }
+        { command = "${pkgs.systemd}/bin/systemctl stop vlcstream.service"; options = [ "SETENV" "NOPASSWD" ]; }
+        { command = "${pkgs.systemd}/bin/systemctl stop vlcstream.service"; options = [ "SETENV" "NOPASSWD" ]; }
+      ];
+    }
+  ];
+
+  # Service to stream webcam using VLC
+  systemd.services.vlcstream = {
+    serviceConfig = {
+      User = "octoprint";
+      Group = "octoprint";
+      ExecStart = ''
+        ${pkgs.vlc}/bin/cvlc v4l2:///dev/video1 \
+        --sout '#transcode{vcodec=mjpg}:std{access=http{mime=multipart/x-mixed-replace;boundary=-7b3cc56e5f51db803f790dad720ed50a},mux=mpjpeg,dst=192.168.2.121:8081}'
+      '';
+    };
+  };
 
   systemd.services.octoprint.serviceConfig.SupplementaryGroups = [ "video" ];
   users.users.octoprint.extraGroups = [ "video" ];
 
-  systemd.services.motion = {
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig.ExecStart =
-      "${pkgs.motion}/bin/motion -c ${./motion.conf}";
-  };
-
-  networking.firewall.allowedTCPPorts = [ 8081 8082 ];
-
+  networking.firewall.allowedTCPPorts = [ 8081 ];
 
   #################
   # GENERAL STUFF #
   #################
 
-  system.stateVersion = 23.05;
+  system.stateVersion = "23.05";
 
   # Define a user account.
   users.users.root = {
