@@ -57,7 +57,7 @@
       User = "octoprint";
       Group = "octoprint";
       ExecStart = ''
-        ${pkgs.vlc}/bin/cvlc v4l2:///dev/video1 \
+        ${pkgs.vlc}/bin/cvlc v4l2:///dev/video0 \
         --sout '#transcode{vcodec=mjpg}:std{access=http{mime=multipart/x-mixed-replace;boundary=-7b3cc56e5f51db803f790dad720ed50a},mux=mpjpeg,dst=192.168.2.121:8081}'
       '';
     };
