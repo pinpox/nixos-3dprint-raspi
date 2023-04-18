@@ -6,11 +6,6 @@ or the configuration re-provisioned after the initial flash.
 
 The Raspberry has a USB-webcam connected to it for livestreaming 
 
-The configuration currently includes:
-- Octoprint with some plugins
-- [Motion](https://motion-project.github.io) for a webcam stream
-
-
 ## Build Image
 
 ```sh
