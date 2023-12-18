@@ -101,9 +101,9 @@
 
   services.openssh = {
     enable = true;
-    passwordAuthentication = false;
+    settings.PasswordAuthentication = false;
     startWhenNeeded = true;
-    kbdInteractiveAuthentication = false;
+    settings.KbdInteractiveAuthentication = false;
   };
 
   # Nix settings
