@@ -1,5 +1,83 @@
 { config, pkgs, lib, ... }: {
 
+
+
+  # Restart klipper and moonraker on config changes
+  systemd.services.klipper.restartTriggers = [
+    config.services.klipper.configFile
+  ];
+
+  systemd.services.moonraker.restartTriggers = [
+    config.services.klipper.configFile
+  ];
+
+  services.klipper = {
+    enable = true;
+    configFile = ./ender3-klipper.cfg;
+    # mutableConfig =false;
+    firmwares.ender3 = {
+      enable = true;
+      enableKlipperFlash = true;
+      serial = "/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0";
+      # https://github.com/Klipper3d/klipper/blob/master/config/printer-creality-ender3-v2-neo-2022.cfg
+      configFile = ./ender3-klipper-firmware.cfg;
+    };
+  };
+
+  services.mainsail = {
+    enable = true;
+    # hostName = "localhost";
+  };
+
+  services.moonraker = {
+    enable = true;
+    # allowSystemControl = true; # for reboot and systemd unit control
+    address = "0.0.0.0";
+    user = "klipper";
+    group = "klipper";
+    settings = {
+      # octoprint_compat = {};
+      history = { };
+      authorization = {
+        force_logins = true;
+        cors_domains = [
+          "*.local"
+          "*.lan"
+          "*://app.fluidd.xyz"
+          "*://my.mainsail.xyz"
+          "*"
+        ];
+        trusted_clients = [
+          "10.0.0.0/8"
+          "127.0.0.0/8"
+          "169.254.0.0/16"
+          "172.16.0.0/12"
+          "192.168.1.0/24"
+          "FE80::/10"
+          "::1/128"
+        ];
+      };
+    };
+  };
+
+  # systemd.services.ustreamer = {
+  #   wantedBy = [ "multi-user.target" ];
+  #   description = "uStreamer for video0";
+  #   serviceConfig = {
+  #     Type = "simple";
+  #     ExecStart = ''${pkgs.ustreamer}/bin/ustreamer --encoder=HW --persistent --drop-same-frames=30'';
+  #   };
+  # };
+
+
+  # Nginx
+# location /stream {
+#     postpone_output 0;
+#     proxy_buffering off;
+#     proxy_ignore_headers X-Accel-Buffering;
+#     proxy_pass http://ustreamer;
+# }
+
   ###############
   # 3D-Printing #
   ###############
@@ -51,6 +129,11 @@
     }
   ];
 
+
+
+
+
+
   # Service to stream webcam using VLC
   systemd.services.vlcstream = {
     serviceConfig = {
@@ -66,7 +149,14 @@
   systemd.services.octoprint.serviceConfig.SupplementaryGroups = [ "video" ];
   users.users.octoprint.extraGroups = [ "video" ];
 
-  networking.firewall.allowedTCPPorts = [ 8081 ];
+  networking.firewall.allowedTCPPorts = [
+    8081
+
+    80 # mainsail
+
+    config.services.moonraker.port
+
+  ];
 
   #################
   # GENERAL STUFF #
